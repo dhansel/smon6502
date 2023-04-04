@@ -172,14 +172,17 @@ the corresponding address is printed. The optional "nn" parameter specifies a re
 
 ## Configuring SMON 6502
 
-There are three basic settings that can be changed by modified by changing 
+There are three basic settings that can be changed by modifying the `config.asm` file:
   - RAM size (default: 16k). RAM is assumed to occupy the address space from $0 to the RAMTOP setting.
     For example, if you have 32K of RAM then set RAMTOP to $7FFF
   - VIA location (default: $6000). Change this if the location of the VIA differs from the default setting.
-  - UART driver. Communication with SMON works via RS232 protocol. By default, SMON is configured to
-    use the 6522 VIA as a pseudo UART. Alternatively, a Motorola MC6850 UART can be used by changing the
-    corresponding setting in config.asm. Support for other UARTs can easily be implemented by adjusting
-    the uart_6850.asm file to your specific UART.
+  - UART driver. Communication with SMON works via RS232 protocol. The following UARTs are supported at this point:
+    - *Pseudo-UART using 6522 VIA (default)*.  This emulates a UART using the 6522 VIA present in Ben Eater's design. 
+      The serial parameters can be modified at the top of `uart_via.asm` and default to 1200 baud 8N1.
+      Note that on a 1MHz system baud rates above 1200 may lead to corruption of received data.
+    - *Motorola MC6850*. If you choose this UART in the config.asm file you can configure it in the `uart_6850.asm` file,
+      most importantly the base address (default is $8100) and the serial parameters.
+
 
 ## Compiling SMON 6502
 
