@@ -174,7 +174,8 @@ The SMON machine language monitor was originally published in three parts in the
 
 SMON was written for the Commodore 64 by Norfried Mann and Dietrich Weineck.
 
-The code here is based on a (partially) commented [disassembly of SMON](https://github.com/cbmuser/smon-reassembly/blob/master/smon_acme.asm)
+The [code](https://github.com/dhansel/smon6502/blob/main/smon.asm) here is based 
+on a (partially) commented [disassembly of SMON](https://github.com/cbmuser/smon-reassembly/blob/master/smon_acme.asm)
 by GitHub user Michael ([cbmuser](https://github.com/cbmuser)).
 
 The [code](https://github.com/dhansel/smon6502/blob/main/uart_via.asm) for handling RS232 communication via the 6522 VIA chip was taken
