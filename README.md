@@ -39,7 +39,7 @@ The following new commands have been added in this version
 To produce a binary file that can be programmed into an EEPROM for the 6502 computer,
 do the following:
   1. Download the `*.asm` files from this repository (there are only 6)
-  2. Download the VASM compiler ([vasm6502_oldstyle_Win64.zip](http://sun.hasenbraten.de/vasm/index.php?view=binrel)).
+  2. Download the VASM compiler ([vasm6502_oldstyle_Win64.zip](http://sun.hasenbraten.de/vasm/bin/rel/vasm6502_oldstyle_Win64.zip)).
   3. Extract `vasm6502_oldstyle.exe` from the archive and put it into the same directory as the .asm files
   4. Issue the following command: `vasm6502_oldstyle.exe -dotdir -Fbin -o smon.bin smon.asm`
 
