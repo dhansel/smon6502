@@ -140,6 +140,35 @@ refer to the [C64Wiki](https://www.c64-wiki.com/wiki/SMON) page or for the full 
 read the [64er article](https://archive.org/details/64er_sonderheft_1985_08/page/n121/mode/2up) 
 (in German).
 
+## New commands
+
+### Intel HEX load
+
+This version of SMON provides the "l" (load [Intel HEX](https://en.wikipedia.org/wiki/Intel_HEX)) command to 
+help test 6502 programs written on your PC and compiled there using a compiler such as VASM:
+  1. Tell your compiler to produce Intel HEX output (in VASM, use the "-Fihex" command line parameter).
+  2. In SMON, type "l" followed by ENTER on the command line
+  3. Copy-and-paste the content of the (plain text ASCII) .hex file produced by your compiler into the terminal.
+
+SMON will show a "+" for each HEX record processed. If a transmission error occurs, SMON shows
+a one-character error code followed by "?". Possible error codes are:
+  - I?: Input character error - an unexpected character was received in the input
+  - C?: Checksum error - the checksum at the end of a record did not match the expected value
+  - M?: Memory error - After writing a byte to memory it did not read back properly (most likely attempting to write to ROM)
+  - B?: Break - Either ESC or CTRL-C was received before the end of the transmission
+
+If no "?" is shown and SMON goes back to the command prompt then the transmission succeeded.
+
+### Memory size and test
+
+The new "MS" (memory size) command checks memory starting at address $0100 and upwards until it finds
+and address where a read after write does not result in the same data. It then shows that address as
+the memory size.
+
+The "MT xxxx yyyy [nn]" command tests memory between $xxxx and $yyyy by writing different patterns
+of data to it and checking whether the data reads back the same. Each time a difference is found
+the corresponding address is printed. The optional "nn" parameter specifies a repetition count
+(defaults to 1). At the end of each test, a "+" is printed.
 
 ## Configuring SMON 6502
 
@@ -163,6 +192,15 @@ do the following:
 
 Then just burn the generated smon.bin file to the EEPROM using whichever programmer
 you have been using.
+
+## Running Commodore BASIC
+
+After implementing the C64 kernal functions necessary to get SMON to work I realized that
+the same functions are enough to run Commodore BASIC. Installing and/or compiling BASIC
+follows the same rules as SMON (just use `basic.bin` or `basic.asm`).
+
+Note that this is more of a toy example since only very simple BASIC programs will work
+(nothing with graphics or sound). Also saving or loading programs is obviously not supported.
 
 ## Credits
 
