@@ -39,9 +39,12 @@ If you are using Ben Eater's standard setup (16k RAM at $0-$3FFF, VIA at $6000, 
 you can just download the [smon.bin](https://github.com/dhansel/smon6502/raw/main/smon.bin) file from
 this repository and burn it to the EEROM.
 
-Connect your terminal (or serial-to-usb adapter) to the VIA as follows: Receive (RX) pin of the terminal goes 
-to pin 19 (CB2) of the VIA. Transmit (TX) pin of the terminal goes to pin 18 (CB1) **and** pin 17 (PB7) of the VIA.
-Configure your terminal program for 1200 baud, 8 data bits, 1 stop bit and no parity. After turning
+Connect your terminal (or serial-to-usb adapter) to the VIA as follows: 
+  - Receive (RX) pin of the terminal goes to pin 19 (CB2) of the VIA.
+  - Transmit (TX) pin of the terminal goes to pin 18 (CB1) **and** pin 17 (PB7) of the VIA.
+  - Make sure the VIA's pin 21 (IRQ) is connected to the 6502 CPU's pin 4 (IRQ)
+  
+Configure your terminal (program) for 1200 baud, 8 data bits, 1 stop bit and no parity. After turning
 on the 6502 you should see SMON showing the 6502 register contents and command prompt.
 
 If you are using a non-standard setup, SMON can easily be adapted by changing the settings
