@@ -35,7 +35,7 @@ The following new commands have been added in this version
 
 ## Installing and running SMON 6502
 
-If you are using Ben Eater's standard setup (16k RAM at $0-$3FFF, VIA at $6000, ROM at $8000-$FFFF)
+If you are using Ben Eater's standard setup (16k RAM at $0-$3FFF, VIA at $6000, ROM at $8000-$FFFF, 1MHz clock)
 you can just download the [smon.bin](https://github.com/dhansel/smon6502/raw/main/smon.bin) file from
 this repository and burn it to the EEROM.
 
@@ -48,6 +48,69 @@ If you are using a non-standard setup, SMON can easily be adapted by changing th
 in the `config.asm` file (see below).
 
 ## Basic usage
+
+At startup, SMON shows the current 6502 processor status, followed by a "." command prompt
+```
+  PC  SR AC XR YR SP  NV-BDIZC
+;E00B B4 E7 00 FF FF  10110100
+.                             
+```
+Where "PC" is the program counter, "SR" is the status register, "AC" is the accumulator, "XR" and "YR" are
+the X and Y registers and "SP" is the stack pointer. the "NV-BDIZC" column shows the individual bits
+in the status register.
+
+At the command prompt you can enter commands. For example, entering "m 1000 1020" will show the memory
+content from $1000-$1020:
+```
+.m 1000 1030                                                                    
+:1000 00 01 02 03 04 05 06 07  08 09 0A 0B 0C 0D 0E 0F         ........ ........
+:1010 10 11 12 13 14 15 16 17  18 19 1A 1B 1C 1D 1E 1F         ........ ........
+:1020 20 21 22 23 24 25 26 27  28 29 2A 2B 2C 2D 2E 2F          !"#$%&' ()*+,-./
+```
+The column on the right shows the (printable) ASCII characters corresponding to the data bytes.
+
+If your terminal supports the VT100 cursor movement sequences, you can **modify** the memory
+content by just moving the cursor into the displayed lines, editing data and pressing ENTER
+on each line where data was modified. If your terminal does not support cursor keys you can
+modify memory by typing (for example) `:1015 AA BB` and pressing ENTER. The example here will 
+set $1015 to AA and $1016 to BB.
+
+If you supply only one argument to the "m" command, SMON will show the memory content line-by-line,
+stopping after each line. Press SPACE to advance to the next line, ESC to go back to the command prompt
+or any other key to keep displaying memory without pausing (press SPACE to pause the scrolling display).
+
+The "d" (disassemble) command will disassemble code in memory, for example:
+```
+.d f000
+,F009  A9 FF     LDA #FF
+,F00B  A2 04     LDX #04
+,F00D  95 FA     STA   FA,X
+,F00F  CA        DEX
+,F010  D0 FB     BNE F00D
+```
+You can use the cursor keys to move over the displayed assembly statements and their arguments and modify 
+them (assuming the code is in RAM).
+
+You can use the "a" (assemble) command to assemble code directly into memory. SMON will show the current
+address as a prompt and you can enter an assembly statement (e.g. `LDX #12`). Press ENTER and SMON will
+assemble it, place it directly in memory, and advance the address to the next location according to the
+previous opcode's size. To exit assembly mode, type "f" as the opcode. SMON will then show you the full
+disassembly of the code you entered, in which you can edit again. For example:
+```
+.a 2000                  
+ 2000  LDX #00 
+ 2002  INX     
+ 2003  BNE 2000
+ 2005  BRK     
+ 2006 f                  
+,2000  A2 00     LDX #00 
+,2002  E8        INX     
+,2003  D0 FB     BNE 2000
+,2005  00        BRK     
+```
+
+
+
 
 ## Configuring SMON 6502
 
