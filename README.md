@@ -98,18 +98,47 @@ previous opcode's size. To exit assembly mode, type "f" as the opcode. SMON will
 disassembly of the code you entered, in which you can edit again. For example:
 ```
 .a 2000                  
- 2000  LDX #00 
- 2002  INX     
- 2003  BNE 2000
- 2005  BRK     
+ 2000  ldx #00 
+ 2002  inx     
+ 2003  bne 2002
+ 2005  brk     
  2006 f                  
 ,2000  A2 00     LDX #00 
 ,2002  E8        INX     
-,2003  D0 FB     BNE 2000
+,2003  D0 FD     BNE 2002
 ,2005  00        BRK     
 ```
 
+To run your code just enter `g 2000`. Note that to jump back into SMON after your code
+finishes, it should end with a `BRK` instruction.
 
+SMON also allows you to single-step through code using the `tw` (trace walk) command. For example:
+
+```
+  PC  SR AC XR YR SP  NV-BDIZC
+;2002 23 E7 00 FF FF  00100011
+.tw 2000                      
+ 2002 23 E7 00 FF FF  INX     
+ 2003 21 E7 01 FF FF  BNE 2002
+ 2002 21 E7 01 FF FF  INX     
+ 2003 21 E7 02 FF FF  BNE 2002
+ 2002 21 E7 02 FF FF  INX     
+ 2003 21 E7 03 FF FF  BNE 2002
+```
+
+After entering the `tw` command, SMON executes the first opcode and stops after
+finishing it and displays the next opcode (the first opcode is not shown).
+It also shows you the processor registers in the same order as they appear in the
+register display line. Press any key to advance one step or ESC to stop.
+If the next command is a `JSR`, press 'j' to "jump" over the subroutine and
+continue after it finishes (this only works if the `JSR` command is located in RAM).
+
+SMON has a number of other "trace" related commands, a range of "find"
+commands to examine memory and several other commands. To get a quick overview
+of commands type "h" at the command line. For a bit more information on each command,
+refer to the [C64Wiki](https://www.c64-wiki.com/wiki/SMON) page or for the full description 
+read the [64er article](https://archive.org/details/64er_sonderheft_1985_08/page/n121/mode/2up) 
+(in German).
 
 
 ## Configuring SMON 6502
