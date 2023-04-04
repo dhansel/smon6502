@@ -1,7 +1,7 @@
 # SMON
 
 SMON is a machine language monitor and direct assembler for the Commodore 64,
-published in 1984 in the German magazin 64'er (for more info see credits).
+published in 1984 in "64'er" magazine (for more info see the [credit section](https://github.com/dhansel/smon6502#credits) below).
 
 In a nutshell, SMON provides the following functionality:
   - View and edit data in memory
