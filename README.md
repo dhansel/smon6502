@@ -23,16 +23,15 @@ computer, such as the one built by [Ben Eater](https://eater.net/6502) in his
 [YouTube video series](https://www.youtube.com/watch?v=LnzuMJLZRdU&list=PLowKtXNTBypFbtuVMUVXNR0z1mu7dp7eH).
 The following original SMON functions are **not** available in this version:
   - Loading and saving programs/data to disk or tape (L/S/I commands)
-  - sending output to a printer (P command)
-  - producing BASIC DATA statements for memory content (B command)
+  - Sending output to a printer (P command)
+  - Producing BASIC DATA statements for memory content (B command)
+  - Disk monitor mode and other extensions
   
 The following new commands have been added in this version
   - H - show a help screen with a brief overview of available commands
   - L - load files in Intel HEX format into the 6502 by pasting them into the terminal
   - MS - check and print size of installed memory
   - MT - test memory
-
-
 
 ## How to compile SMON 6502
 
@@ -43,6 +42,8 @@ do the following:
   3. Extract `vasm6502_oldstyle.exe` from the archive and put it into the same directory as the .asm files
   4. Issue the following command: `vasm6502_oldstyle.exe -dotdir -Fbin -o smon.bin smon.asm`
 
+Then just burn the generated smon.bin file to the EEPROM using whichever programmer
+you have been using.
 
 ## Credits
 
