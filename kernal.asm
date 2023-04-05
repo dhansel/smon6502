@@ -2,7 +2,7 @@
 ;;; ----------------------  C64 KERNAL routines and stubs   --------------------
 ;;; ----------------------------------------------------------------------------
 
-TERMCOL         = $ff           ; cursor column on terminal
+TERMCOL         = $01           ; cursor column on terminal
 STOPFLAG        = $91           ; flag for "STOP" key pressed
 LASTRECV        = $93           ; previous received char
 ROWLIMIT        = $9C           ; number of rows currently in buffer
