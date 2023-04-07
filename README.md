@@ -40,8 +40,8 @@ you can just download the [smon.bin](https://github.com/dhansel/smon6502/raw/mai
 this repository and burn it to the EEROM.
 
 Connect your terminal (or serial-to-usb adapter) to the VIA as follows: 
-  - Receive (RX) pin of the terminal goes to pin 19 (CB2) of the VIA.
-  - Transmit (TX) pin of the terminal goes to pin 18 (CB1) **and** pin 17 (PB7) of the VIA.
+  - Receive (RX) pin of the terminal goes to pin 39 (CA2) of the VIA.
+  - Transmit (TX) pin of the terminal goes to pin 40 (CA1) **and** pin 2 (PA0) of the VIA.
   - Make sure the VIA's pin 21 (IRQ) is connected to the 6502 CPU's pin 4 (IRQ)
   
 Configure your terminal (program) for 1200 baud, 8 data bits, 1 stop bit and no parity. After turning
@@ -182,7 +182,8 @@ There are three basic settings that can be changed by modifying the `config.asm`
   - UART driver. Communication with SMON works via RS232 protocol. The following UARTs are supported at this point:
     - *Pseudo-UART using 6522 VIA (default)*.  This emulates a UART using the 6522 VIA present in Ben Eater's design. 
       The serial parameters can be modified at the top of `uart_via.asm` and default to 1200 baud 8N1.
-      Note that on a 1MHz system baud rates above 1200 may lead to corruption of received data.
+      Note that on a 1MHz system baud rates above 1200 may lead to corruption of received data. The pins used for
+      communication can also be configured at the top of `uart_via.asm`.
     - *Motorola MC6850*. If you choose this UART in the config.asm file you can configure it in the `uart_6850.asm` file,
       most importantly the base address (default is $8100) and the serial parameters.
 
