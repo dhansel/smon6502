@@ -67,7 +67,8 @@ KGETIN: LDA     $C6
         LDA     $0277
         RTS
 GETIN1: JSR     UAGET           ; get char from UART, zero if none
-        BEQ     GETINR          ; return with 0
+        CMP	#$00		; did we receive a character?
+        BEQ     GETINR          ; if not, return with 0
         CMP     #27             ; is it ESC (stop)?
         BEQ     SETSF           ; set STOP flag if so
         CMP     #3              ; is it CTRL-C (stop)?

@@ -7,9 +7,16 @@
 ;;; 
 ;;; Note that the bit timings assume a 1Mhz clock. To use a different clock
 ;;; speed, adapt the values in the baud rate table at the bottom of this file.
-;;; 
-;;; VIA serial TX (output) pin : CB2 (19)
-;;; VIA serial RX (input)  pin : CB1 (18) _and_ PB7 (17) (must connect RX signal to both pins!)
+;;;
+
+;;; if DATAPORT=0, DATABIT=x:
+;;;    VIA serial TX (output) pin : CA2 (39)
+;;;    VIA serial RX (input)  pin : CA1 (40) _and_ PAx (2+x) (must connect RX signal to both pins!)
+;;; if DATAPORT=1, DATABIT=x:
+;;;    VIA serial TX (output) pin : CB2 (19)
+;;;    VIA serial RX (input)  pin : CB1 (18) _and_ PBx (10+x) (must connect RX signal to both pins!)
+DATAPORT   = 0          ; 0=use port A (CA1, CA2, PAx), 1=use port B (CB1, CB2, PBx)
+DATABIT    = 0          ; data bit (0 or 7) to use for RX input from selected port
 
 ;;; serial parameters (with a 1MHz clock, baud rates above 1200 may cause data corruption on receive)
 BAUDRATE   = 8          ; 1=50, 2=75, 3=110, 4=134.5, 5=150, 6=300, 7=600, 8=1200, 9=1800, 10=2400, 11=3600
@@ -23,6 +30,25 @@ RXBUFLEN   = 8          ; length of RX buffer (0 means 256)
 TXBUF      = $03FC      ; memory location of TX buffer
 TXBUFLEN   = 4          ; length of TX buffer (0 means 256)
 
+;;; pins used for serial port
+ .if DATAPORT==1
+Cx1CTRL    = $10        ; VIA PCR CB1 control bit (input edge control)
+Cx2CTRL    = $20        ; VIA PCR CB2 control bit (output value control)
+Cx1FLAG    = $10        ; VIA IER CB1 interrupt enable bit
+DDRxREG    = VIA_DDRB   ; VIA DDRB register
+DRxREG     = VIA_DRB    ; VIA DRB register
+ .else
+Cx1CTRL    = $01        ; VIA PCR CA1 control bit (input edge control)
+Cx2CTRL    = $02        ; VIA PCR CA2 control bit (output value control)
+Cx1FLAG    = $02        ; VIA IER CA1 interrupt enable bit
+DDRxREG    = VIA_DDRA   ; VIA DDRA register
+DRxREG     = VIA_DRA    ; VIA DRA register
+ .endif
+ 
+ .if DATABIT != 0 && DATABIT != 7
+        .err "DATABIT must be 0 or 7!"
+ .endif
+                
 ;;; variables used in RS232 code
 RXBYTE	   = $92	; receiver byte buffer/assembly location
 RXCNT	   = $95	; receiver bit count in
@@ -69,17 +95,16 @@ UAINIT: ;; pseudo UART control register:
         ;; bits 4-0: not used
         LDA     #(PARITY*32)
         STA     REGCMD          ; set pseudo UART command register
-
         SEI                     ; prevent interrupts
         LDA	#$7F		; disable all VIA interrupts
 	STA	VIA_IER		; on VIA 1 IER
 	LDA	#$40		; set T1 free run, T2 clock ?2, SR disabled, latches disabled
 	STA	VIA_ACR 	; set VIA 1 ACR
-	LDA	#$EE		; CB2 high, CB1 -ve edge, CA2 high, CA1 -ve edge
+	LDA	#~Cx1CTRL	; Cx2 high, Cx1 -ve edge
 	STA	VIA_PCR		; set VIA 1 PCR
-	LDA	VIA_DDRB	; get VIA 1 DDRB
-        AND	#$7F		; set bit 7 as input
-	STA	VIA_DDRB	; set VIA 1 DDRB
+	LDA	DDRxREG         ; get VIA 1 DDRx
+        AND	#~(1<<DATABIT) & $FF ; set bit 7 as input
+	STA	DDRxREG         ; set VIA 1 DDRx
 	LDY	#$00		; clear index
 	STY	REGSTAT		; clear RS232 status byte
         LDX	#$09		; set bit count to 9 (8 data + 1 stop bit)
@@ -130,7 +155,8 @@ LF51B:  LDA     #0              ; initialize send and receive buffer pointers
 
 ;***********************************************************************************;
 ;
-; send byte to RS232 buffer
+; Send byte to UART, wait until UART is ready to transmit
+; A, X and Y register contents remain unchanged
 
 UAPUTW: STA     TMP             ; save data byte
         PHA
@@ -142,18 +168,17 @@ UAPUTW: STA     TMP             ; save data byte
         LDY     TXBUFEND        ; get index to Tx buffer end in Y
         LDX	TXBUFEND	; get index to Tx buffer end in X
 	INX			; + 1
+        .if TXBUFLEN>0
         CPX     #TXBUFLEN       ; have we reached TXBUFLEN?
         BNE     UAPL1           ; jump if not
         LDX     #0              ; wrap to 0
-UAPL1:  CLI                     ; allow interrupts
-        ;; the (short) period between CLI and SEI allows the CPU to
-        ;; process transmit timer interrups and free up space in the buffer
-        SEI                     ; prevent interrupts
-        CPX	TXBUFSTART	; compare with index to Tx buffer start
+        .endif
+UAPL1:  CPX	TXBUFSTART	; compare with index to Tx buffer start
         BEQ     UAPL1           ; wait if buffer full
         STX	TXBUFEND	; set new Tx buffer end
         STA	(TXBUFPTR),Y	; store data byte in buffer (using previous index)
-	BIT	VIA_IER		; test VIA 1 IER
+	SEI                     ; prevent interrupts
+        BIT	VIA_IER		; test VIA 1 IER
 	BVS	LF102		; branch if T1 already enabled
         LDA	BITTL		; get baud rate bit time low byte
 	STA	VIA_T1CL	; set VIA 1 T1C_l
@@ -172,29 +197,38 @@ LF102:  CLI                     ; allow interrupts
 
 ;***********************************************************************************;
 ;
-; get byte from RS232 buffer
+; Get received byte from UART, result returned in A,
+; returns A=0 if no character available for reading
+; X and Y register contents remain unchanged
 
-UAGET:  SEI                     ; prevent interrupts
-        STY     TMP             ; save Y
+UAGET:  STY     TMP             ; save Y
         LDY	RXBUFSTART	; get index to Rx buffer start
 	CPY	RXBUFEND	; compare with index to Rx buffer end
-	BEQ	LF15D		; return null if buffer empty
-	LDA	(RXBUFPTR),Y	; get byte from Rx buffer
-        INY                     ; increment index
-        CPY     #RXBUFLEN       ; have we reached RXBUFLEN?
-        BNE     LF15C           ; jump if not
-        LDY     #0              ; wrap to 0
-LF15C:  STY     RXBUFSTART      ; set new Rx buffer start
-        .byte   $2C             ; skip next 2-byte opcode
-LF15D:  LDA	#$00		; return null
+	BNE	UAGW2 		; if not empty, get byte from buffer and exit
         LDY     TMP             ; restore Y
-        CMP     #$00            ; set Z flag if 0
-        CLI                     ; allow interrupts
+        LDA	#$00		; return null
 	RTS
 
-UAGETW: JSR     UAGET           ; attempt to get byte
-        BEQ     UAGETW          ; repeat if no byte (or 0) received
-        RTS
+;***********************************************************************************;
+;
+; Get received byte from UART, result returned in A,
+; waits until a received character is available
+; X and Y register contents remain unchanged
+        
+UAGETW: STY     TMP             ; save Y
+        LDY	RXBUFSTART	; get index to Rx buffer start
+UAGW1:  CPY	RXBUFEND	; compare with index to Rx buffer end
+	BEQ	UAGW1 		; wait if buffer empty
+UAGW2:  LDA	(RXBUFPTR),Y	; get byte from Rx buffer
+        INY                     ; increment index
+        .if RXBUFLEN>0
+        CPY     #RXBUFLEN       ; have we reached RXBUFLEN?
+        BNE     UAGW3           ; jump if not
+        LDY     #0              ; wrap to 0
+        .endif
+UAGW3:  STY     RXBUFSTART      ; set new Rx buffer start
+        LDY     TMP             ; restore Y
+	RTS
 
 ;***********************************************************************************;
 ;
@@ -204,7 +238,7 @@ UAIRQ:  LDA	VIA_IFR		; get VIA 1 IFR
 	BPL	LFEFF		; if no interrupt restore registers and exit
 	AND	VIA_IER 	; AND with VIA 1 IER (mask out disabled interrupts)
 	TAX			; copy to X
-	LDA	VIA_IER		; get VIA 1 IER
+        LDA	VIA_IER		; get VIA 1 IER
 	ORA	#$80		; set enable bit, this bit should be set according to the
 				; Rockwell 6522 datasheet but clear acording to the MOS
 				; datasheet. best to assume it's not in the state required
@@ -217,8 +251,8 @@ UAIRQ:  LDA	VIA_IFR		; get VIA 1 IFR
 	BEQ	LFF02		; branch if not T1 interrupt
 
         ;; handle VIA T1 interrupt (TX)
-	LDA	#$CE		; CB2 low, CB1 -ve edge, CA2 high, CA1 -ve edge
-	ORA	TXBIT		; OR RS232 next bit to send, sets CB2 high if set
+	LDA	#~(Cx1CTRL|Cx2CTRL)	; Cx2 low, Cx1 -ve edge
+	ORA	TXBIT		; OR RS232 next bit to send, sets Cx2 high if set
 	STA	VIA_PCR		; set VIA 1 PCR
 	LDA	VIA_T1CL	; get VIA 1 T1C_l
 	PLA			; restore interrupt enable byte to restore previously enabled interrupts
@@ -231,8 +265,8 @@ LFF02:  TXA			; get active interrupts back
 	BEQ	LFF2C		; branch if not T2 interrupt
 
         ;; handle VIA T2 interrupt (RX)
-	LDA	VIA_DRB 	; get VIA 1 DRB
-	AND	#$80		; mask RS232 data in
+	LDA	DRxREG  	; get VIA 1 DRx
+	AND	#(1<<DATABIT)	; mask RS232 data in
 	STA	RXBIT		; save received bit
 	LDA	VIA_T2CL	; get VIA 1 T2C_l
 	SBC	#$16		; ?
@@ -246,9 +280,9 @@ LFF02:  TXA			; get active interrupts back
 	JSR	LF036		; call RS232 Rx routine
 	JMP	LFF56		; restore registers and exit interrupt
 
-        ;; handle VIA CB1 interrupt (RX start bit)
+        ;; handle VIA Cx1 interrupt (RX start bit)
 LFF2C:  TXA			; get active interrupts back
-	AND	#$10		; mask CB1 interrupt, Rx data bit transition
+	AND	#Cx1FLAG	; mask Cx1 interrupt, Rx data bit transition
 	BEQ	LFEFF		; if no bit restore registers and exit interrupt
 	LDA	REGCTRL		; get pseudo 6551 control register
 	AND	#$0F		; clear non baud bits
@@ -258,10 +292,10 @@ LFF2C:  TXA			; get active interrupts back
 	STA	VIA_T2CL	; set VIA 1 T2C_l
 	LDA	BRTAB-1,X	; get baud count high byte
 	STA	VIA_T2CH	; set VIA 1 T2C_h
-	LDA	VIA_DRB         ; read VIA 1 DRB, clear interrupt flag
+	LDA	DRxREG          ; read VIA 1 DRx, clear interrupt flag
 	PLA			; restore interrupt enable byte to restore previously enabled interrupts
 	ORA	#$20		; enable T2 interrupt
-	AND	#$EF		; disable CB1 interrupt
+	AND	#~Cx1FLAG       ; disable Cx1 interrupt
 	STA	VIA_IER		; set VIA 1 IER
 	LDX	NBITS		; get number of bits to be sent/received
 	STX	RXCNT		; set receiver bit count
@@ -292,7 +326,7 @@ LEFB0:  TXA                     ; copy bit to A
 	BEQ	LEFBF		; if RS232 bit count now zero go do parity bit
         ;; save bit and exit
 LEFB9:  TXA			; copy bit to A
-	AND	#$20		; mask for CB2 control bit
+	AND	#Cx2CTRL	; mask for Cx2 control bit
 	STA	TXBIT		; save RS232 next bit to send
 	RTS
         
@@ -340,9 +374,11 @@ LEFEE:  LDA	#$00		; clear A
 	LDA	(TXBUFPTR),Y	; else get byte from buffer
 	STA	TXBYTE		; save to RS232 output byte buffer
         INY                     ; increment index
+        .if TXBUFLEN>0
         CPY     #TXBUFLEN       ; have we reached TXBUFLEN?
         BNE     LEFFC           ; jump if not
         LDY     #0              ; wrap to 0
+        .endif
 LEFFC:  STY     TXBUFSTART      ; set new Tx buffer start
 	RTS
 
@@ -363,7 +399,11 @@ LF036:  LDX	RXSBIT		; get start bit check flag
 	LDA	RXBIT		; get received bit
 	EOR	RXPBIT		; exclusive or with parity bit
 	STA	RXPBIT		; store as new parity bit
+ .if DATABIT==7        
 	ASL	RXBIT		; shift received bit into carry
+ .else        
+	LSR	RXBIT		; shift received bit into carry
+ .endif
 	ROR	RXBYTE		; shift carry into received byte
 LF04A:  RTS
 
@@ -387,9 +427,11 @@ LF081:  CPX	#$09		; have we shifted enough yet?
 LF089:  LDY     RXBUFEND        ; get index into Y
         LDX	RXBUFEND        ; get index into X
         INX                     ; increment index
+        .if RXBUFLEN>0
         CPX     #RXBUFLEN       ; have we reached RXBUFLEN?
         BNE     LF070           ; jump if not
         LDX     #0              ; wrap to 0
+        .endif
 LF070:  CPX	RXBUFSTART	; compare with index to Rx buffer start
 	BEQ	LF0A2		; if buffer full, go do Rx overrun error
 	STX	RXBUFEND	; set new Rx buffer end
@@ -417,7 +459,7 @@ LF0A8:  LDA	#$02		; set Rx framing error
 	STA	REGSTAT		; save RS232 status byte
                 
         ;; prepare to receive next byte
-LF05B:  LDA	#$90		; enable CB1 interrupt
+LF05B:  LDA	#$80|Cx1FLAG	; enable Cx1 interrupt
 	STA	VIA_IER		; set VIA 1 IER
 	STA	RXSBIT		; set start bit check flag (no start bit received)
 	LDA	#$20		; disable T2 interrupt
