@@ -1730,7 +1730,7 @@ TWINT:  lda     #$40            ; clear VIA timer 1 interrupt flag
         sta     VIA_IFR
         jsr     LCDE5           ; restore IRQ vector
         cld                     ; make sure "decimal" flag is not set
-        .if UART_DRIVER==6522   ; if VIA is also used as UART
+        .if UART_TYPE==6522     ; if VIA is also used as UART
         lda     #$40            ; set T1 free run, T2 clock ?2
         sta     VIA_ACR         ; set VIA 1 ACR
         lda	#$40		; disable VIA timer 1 interrupt
@@ -1835,7 +1835,7 @@ LCD60:  sta     $02BC
         jsr     LCC65
         lda     $02BC
         beq     LCDA9
-LCD72:  .if UART_DRIVER==6522   ; if VIA is also used as UART
+LCD72:  .if UART_TYPE==6522     ; if VIA is also used as UART
         lda     VIA_IER         ; get enabled VIA interrupts
         and     #$60            ; isolate T1 and T2 interrupts
         bne     LCD72           ; wait until both disabled (UART is idle)

@@ -10,10 +10,14 @@ VIA = $6000
 ; in one consecutive range from 0-RAMTOP
 RAMTOP = $3FFF
 
+; main CPU clock rate (used for UART timing)
+CPU_CLOCK_RATE  = 1000000
+
 ; Currently supported UART options are:
 ;   6522: MOS 6522 (VIA)
+;   6551: MOS 6551 or WDC 65C51N (ACIA)
 ;   6850: Motorola MC6850 UART
-UART_DRIVER = 6522
+UART_TYPE = 6551
                 
 ;;; ------------------------------------------------------------------
 

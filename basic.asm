@@ -859,9 +859,9 @@
 ;;; -------------  C64 KERNAL ROM emulation and stub routines   ----------------
 ;;; ----------------------------------------------------------------------------
 
-LINEBUF         = $0400         ; line ("screen") buffer memory start
-NUMCOLS         = 40            ; line buffer length
-NUMROWS         = 25            ; max number of rows
+LINEBUF         = $0400         ; screen buffer start in memory
+NUMCOLS         = 80            ; length of a row
+NUMROWS         = 25            ; number of rows in buffer
 INPUT_UCASE     = 1             ; convert all input to uppercase
 SUPPRESS_NP     = 1             ; do not output non-printable characters
                 
@@ -876,21 +876,15 @@ WSTART: CLD                     ; clear decimal mode flag
 ENTRY:  LDX     #<RAMTOP
         LDY     #>RAMTOP
         JSR     $FF99           ; set RAM top
-        LDX     #$01
-        LDY     #$08
+        LDX     #<(LINEBUF + (NUMCOLS*NUMROWS) + 1)
+        LDY     #>(LINEBUF + (NUMCOLS*NUMROWS) + 1)
         JSR     $FF9C           ; set RAM bottom
-        LDA     #$04
-        STA     $0288           ; set screen memory page
         LDA     #<WSTART        ; set NMI and BRK ...
         STA     $0316           ; interrupt vectors ...
         STA     $0318           ; to do BASIC warm start ...
         LDA     #>WSTART        ; (we are not using IRQs)
         STA     $0317
         STA     $0319
-        PHA                     ; BASIC uses top of stack as 
-        PHA                     ; temporary storage and will 
-        PHA                     ; crash if we don't add some
-        PHA                     ; padding
         JMP     ($A000)         ; BASIC cold start
         
         .include "kernal.asm"

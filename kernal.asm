@@ -530,13 +530,17 @@ RESET:  SEI                     ; prevent IRQ interrupts
 ;;; ---------------------- UART communication functions  -----------------------
 ;;; ----------------------------------------------------------------------------
 
- .if UART_DRIVER==6522
-   .include "uart_via.asm"
+ .if UART_TYPE==6522
+   .include "uart_6522.asm"
  .else 
-   .if UART_DRIVER==6850
-     .include "uart_6850.asm"
+   .if UART_TYPE==6551
+     .include "uart_6551.asm"
    .else
-     .err "invalid UART_DRIVER"
+     .if UART_TYPE==6850
+       .include "uart_6850.asm"
+     .else
+       .err "invalid UART_TYPE"
+     .endif
    .endif
  .endif
         

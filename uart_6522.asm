@@ -481,15 +481,15 @@ LF0B3:  LDA	RXBYTE		; get assembled byte
 ; baud rate word is calculated from ..
 ; (system clock / 2 / baud rate) - 100
 
-; baud rate table for 1Mhz clock:      
-BRTAB:  .word	9900			;   50   baud
-	.word	6567 			;   75   baud
-	.word	4445 			;  110   baud
-	.word	3617 			;  134.5 baud
-	.word	3233 			;  150   baud
-	.word	1566 			;  300   baud
-	.word	733  			;  600   baud
-	.word	316  			; 1200   baud
-	.word	177  			; 1800   baud
-	.word	108   			; 2400   baud
-	.word	39   			; 3600   baud
+; baud rate table
+BRTAB:  .word	(CPU_CLOCK_RATE/2/50)-100       ;   50   baud
+	.word	(CPU_CLOCK_RATE/2/75)-100 	;   75   baud
+	.word	(CPU_CLOCK_RATE/2/110)-100 	;  110   baud
+	.word	(CPU_CLOCK_RATE  /269)-100 	;  134.5 baud
+	.word	(CPU_CLOCK_RATE/2/150)-100 	;  150   baud
+	.word	(CPU_CLOCK_RATE/2/300)-100      ;  300   baud
+	.word	(CPU_CLOCK_RATE/2/600)-100      ;  600   baud
+	.word	(CPU_CLOCK_RATE/2/1200)-100     ; 1200   baud
+	.word	(CPU_CLOCK_RATE/2/1800)-100     ; 1800   baud
+	.word	(CPU_CLOCK_RATE/2/2400)-100     ; 2400   baud
+	.word	(CPU_CLOCK_RATE/2/3600)-100     ; 3600   baud
