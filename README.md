@@ -181,7 +181,7 @@ There are three basic settings that can be changed by modifying the `config.asm`
   - UART driver. Communication with SMON works via RS232 protocol. The following UARTs are supported at this point:
     - *WCS 65C51N ACIA (default)*. This is the UART Ben Eater is using in his project. The serial parameters are
       set to 9600 baud, 8 data bits, 1 stop bit and no parity. You can change the serial parameters and base
-      address for the ACIA at the top of the uart_6551.asm file.
+      address for the ACIA at the top of the `uart_6551.asm` file.
     - *Pseudo-UART using 6522 VIA*.  This emulates a UART using the 6522 VIA present in Ben Eater's design. 
       The serial parameters can be modified at the top of `uart_6522.asm` and default to 1200 baud 8N1.
       Note that on a 1MHz system baud rates above 1200 may lead to corruption of received data.
