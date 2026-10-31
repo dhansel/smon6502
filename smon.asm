@@ -638,8 +638,9 @@ LC439:  cmp     #$20            ; character code < 32 (space)
         bcc     LC44F           ; print character
 LC449:  lda     #$2E
 LC44F:  sta     ($D1),y
-        lda     $0286
-        sta     ($F3),y
+        lda     $0286           ; get foreground color
+        nop                     ; this used to be STA ($F3),Y (attempting to
+        nop                     ; write to color RAM which we don't have)
 LC456:  jsr     LC367
         iny
         cpy     #80
